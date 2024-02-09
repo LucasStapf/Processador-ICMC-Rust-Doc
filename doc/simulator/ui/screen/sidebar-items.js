@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["CHARMAP_DEPTH","CHAR_SIZE","CHAR_SIZE_PIXELS","PIXEL_SIZE"],"mod":["imp"],"struct":["Screen"]};

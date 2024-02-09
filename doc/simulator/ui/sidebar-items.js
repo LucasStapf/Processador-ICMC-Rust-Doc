@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["mem_cell_row","screen","window"]};

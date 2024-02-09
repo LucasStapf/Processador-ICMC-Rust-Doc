@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["APP_ID"],"fn":["build_ui","load_css","main"],"mod":["files","mem_obj","mem_row","processor","ui"]};

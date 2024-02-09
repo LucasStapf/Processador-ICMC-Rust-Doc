@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["MAX_VALUE_MEMORY","MEMORY_SIZE","NUM_REGISTERS"],"mod":["errors","instructions","modules"],"struct":["Processor"]};

@@ -250,6 +250,12 @@
 <a href="#249" id="249">249</a>
 <a href="#250" id="250">250</a>
 <a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>isa::MemoryCell;
 <span class="kw">use </span>processor::Processor;
 
@@ -322,7 +328,13 @@
 
             isa::Instruction::INPUT =&gt; <span class="macro">todo!</span>(),
             isa::Instruction::OUTPUT =&gt; <span class="macro">todo!</span>(),
-            isa::Instruction::OUTCHAR =&gt; <span class="macro">todo!</span>(),
+
+            isa::Instruction::OUTCHAR =&gt; <span class="macro">format!</span>(
+                <span class="string">"&lt;b&gt;OUTCHAR&lt;/b&gt; R{}, R{}"</span>,
+                rx(processor.mem(addr).unwrap()),
+                ry(processor.mem(addr).unwrap())
+            ),
+
             isa::Instruction::INCHAR =&gt; <span class="macro">todo!</span>(),
             isa::Instruction::SOUND =&gt; <span class="macro">todo!</span>(),
 

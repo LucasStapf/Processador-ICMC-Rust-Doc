@@ -583,22 +583,64 @@
 <a href="#582" id="582">582</a>
 <a href="#583" id="583">583</a>
 <a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a>
+<a href="#591" id="591">591</a>
+<a href="#592" id="592">592</a>
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
+<a href="#608" id="608">608</a>
+<a href="#609" id="609">609</a>
+<a href="#610" id="610">610</a>
+<a href="#611" id="611">611</a>
+<a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
 </pre></div><pre class="rust"><code><span class="kw">mod </span>imp {
 
     <span class="kw">use </span>adw::glib;
     <span class="kw">use </span>adw::prelude::<span class="kw-2">*</span>;
     <span class="kw">use </span>adw::subclass::prelude::<span class="kw-2">*</span>;
+    <span class="kw">use </span>adw::subclass::window;
     <span class="kw">use </span>adw::ActionRow;
+    <span class="kw">use </span>async_channel::Receiver;
+    <span class="kw">use </span>async_channel::Sender;
     <span class="kw">use </span>gtk::glib::clone;
     <span class="kw">use </span>gtk::InfoBar;
     <span class="kw">use </span>gtk::Revealer;
     <span class="kw">use </span>gtk::{gdk, CompositeTemplate, Entry, Label, ToggleButton};
+    <span class="kw">use </span>log::debug;
     <span class="kw">use </span>log::error;
+    <span class="kw">use </span>processor::errors::ProcError;
+    <span class="kw">use </span>std::sync::Arc;
+    <span class="kw">use </span>std::sync::Mutex;
+    <span class="kw">use </span>std::thread;
     <span class="kw">use </span>std::{borrow::BorrowMut, cell::RefCell};
 
     <span class="kw">use </span><span class="kw">crate</span>::mem_row::MemoryCellRow;
     <span class="kw">use </span><span class="kw">crate</span>::processor::RunMode;
+    <span class="kw">use </span><span class="kw">crate</span>::processor::RUNTIME;
+    <span class="kw">use </span><span class="kw">crate</span>::ui::screen::Screen;
 
+    <span class="kw">use </span><span class="kw">super</span>::InfoType;
     <span class="kw">use </span><span class="kw">super</span>::WindowData;
 
     <span class="attr">#[derive(CompositeTemplate, Default)]
@@ -712,63 +754,72 @@
         }
     }
 
+    <span class="kw">impl </span>Window {
+        <span class="kw">fn </span>processor_start(
+            <span class="kw-2">&amp;</span><span class="self">self</span>,
+            tx: Sender&lt;InfoType&lt;ProcError&gt;&gt;,
+            rx: Receiver&lt;InfoType&lt;ProcError&gt;&gt;,
+        ) {
+            <span class="self">self</span>.data.borrow_mut().processor_manager.run(tx);
+
+            <span class="kw">let </span>obj = <span class="self">self</span>.obj();
+            <span class="kw">let </span>pm = <span class="self">self
+                </span>.data
+                .borrow_mut()
+                .processor_manager
+                .borrow_mut()
+                .clone();
+            glib::spawn_future_local(<span class="macro">clone!</span>(@strong obj <span class="kw">as </span>win =&gt; <span class="kw">async move </span>{
+                <span class="kw">while let </span><span class="prelude-val">Ok</span>(info) = rx.recv().<span class="kw">await </span>{
+                    <span class="kw">match </span>info {
+                        InfoType::UpdateUI =&gt; win.update_ui(),
+                        InfoType::UpdateScreen(pixel, index) =&gt; {
+                            <span class="kw">if let </span><span class="prelude-val">Some</span>(screen) = win.imp().frame_screen.child().and_downcast::&lt;Screen&gt;() {
+                                screen.set_pixelmap(pixel, index);
+                                screen.draw();
+                            }
+                        }
+                        InfoType::UpdateMode(mode) =&gt; {
+                            <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>m) = pm.mode.lock() {
+                                <span class="kw-2">*</span>m = mode;
+                            }
+                        }
+                        InfoType::Error(e) =&gt; win.show_error_dialog_processor(e),
+                        InfoType::None =&gt; (),
+                    }
+                }
+            }));
+        }
+    }
+
     <span class="kw">impl </span>ObjectImpl <span class="kw">for </span>Window {
         <span class="kw">fn </span>constructed(<span class="kw-2">&amp;</span><span class="self">self</span>) {
             <span class="self">self</span>.parent_constructed();
 
             <span class="kw">let </span>obj = <span class="self">self</span>.obj();
-            <span class="comment">// Atualiza o memory-view
-            </span>obj.update_memory_view(<span class="number">0</span>);
+            obj.update_memory_view(<span class="number">0</span>); <span class="comment">// Atualiza o memory-view
 
-            <span class="comment">// Cria o processador
             </span><span class="kw">let </span>(tx, rx) = async_channel::bounded(<span class="number">1</span>);
-            <span class="self">self</span>.data.borrow_mut().processor_manager.borrow_mut().tx = <span class="prelude-val">Some</span>(tx);
-            <span class="self">self</span>.data.borrow_mut().processor_manager.borrow_mut().run();
+            <span class="self">self</span>.processor_start(tx.clone(), rx);
 
-            glib::spawn_future_local(<span class="macro">clone!</span>(@strong obj <span class="kw">as </span>window =&gt; <span class="kw">async move </span>{
-                <span class="kw">while let </span><span class="prelude-val">Ok</span>(error) = rx.recv().<span class="kw">await </span>{
-                    <span class="kw">match </span>error {
-                        <span class="prelude-val">Some</span>(e) =&gt; window.show_error_dialog_processor(e),
-                        <span class="prelude-val">None </span>=&gt; (),
-                    }
-                    window.update_ui();
-                }
-            }));
-
-            <span class="kw">let </span>pm = <span class="self">self</span>.data.borrow_mut().processor_manager.clone();
             <span class="kw">let </span>event_controller = gtk::EventControllerKey::new();
             event_controller.connect_key_pressed(
-                <span class="macro">clone!</span>(@strong <span class="self">self</span>.toggle_mode_debug <span class="kw">as </span>toggle_debug,
-                    @strong pm =&gt; <span class="kw">move </span>|<span class="kw">_</span>, key, <span class="kw">_</span>, <span class="kw">_</span>| {
+                <span class="macro">clone!</span>(@strong <span class="self">self</span>.toggle_mode_debug <span class="kw">as </span>toggle_debug, @strong obj <span class="kw">as </span>win,
+                    @strong tx
+                    =&gt; <span class="kw">move </span>|<span class="kw">_</span>, key, <span class="kw">_</span>, <span class="kw">_</span>| {
                     <span class="kw">match </span>key {
                         gdk::Key::F1 =&gt; {
-                            <span class="kw">match </span>pm.mode.lock() {
-                                <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>m) =&gt; {
-                                    <span class="kw">match </span><span class="kw-2">*</span>m {
-                                        RunMode::Run =&gt; {
-                                            <span class="kw-2">*</span>m = RunMode::Debug(<span class="bool-val">false</span>);
-                                            toggle_debug.set_active(<span class="bool-val">true</span>);
-                                        }
-                                        RunMode::Debug(<span class="kw">_</span>) =&gt; {
-                                            <span class="kw-2">*</span>m = RunMode::Run;
-                                            toggle_debug.set_active(<span class="bool-val">false</span>);
-                                        }
-                                    }
-                                }
-                                <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">error!</span>(<span class="string">"Falha ao mudar o modo para Run: {e}"</span>),
-                            }
+                            tx.
+                            send_blocking(InfoType::UpdateMode(<span class="prelude-val">Some</span>(RunMode::Run))).unwrap();
+                            toggle_debug.set_active(<span class="bool-val">false</span>);
                         }
                         gdk::Key::F2 =&gt; {
-                            <span class="kw">match </span>pm.mode.lock() {
-                                <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>m) =&gt; {
-                                    <span class="kw-2">*</span>m = RunMode::Debug(<span class="bool-val">true</span>);
-                                    toggle_debug.set_active(<span class="bool-val">true</span>);
-                                }
-                                <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">error!</span>(<span class="string">"Falha ao mudar o modo para Debug: {e}"</span>),
-                            }
+                            tx.
+                            send_blocking(InfoType::UpdateMode(<span class="prelude-val">Some</span>(RunMode::Debug))).unwrap();
+                            toggle_debug.set_active(<span class="bool-val">true</span>);
                         }
                         <span class="kw">_ </span>=&gt; (),
-                    }
+                    };
                     glib::Propagation::Proceed
                 }),
             );
@@ -799,6 +850,7 @@
 }
 
 <span class="kw">use </span><span class="kw">crate</span>::mem_row::MemoryCellRow;
+<span class="kw">use </span><span class="kw">crate</span>::processor::RunMode;
 <span class="kw">use </span>adw::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>adw::Application;
 <span class="kw">use </span>adw::{gio, glib};
@@ -807,8 +859,17 @@
 <span class="kw">use </span>gtk::MessageType;
 <span class="kw">use </span>log::error;
 <span class="kw">use </span>processor::errors::ProcError;
+<span class="kw">use </span>processor::modules::video::Pixelmap;
 
 <span class="kw">use </span><span class="kw">crate</span>::processor::{instructions::InstructionDisplay, ProcessorManager};
+
+<span class="kw">pub enum </span>InfoType&lt;T&gt; {
+    UpdateUI,
+    UpdateScreen(Pixelmap, usize),
+    UpdateMode(<span class="prelude-ty">Option</span>&lt;RunMode&gt;),
+    Error(T),
+    <span class="prelude-val">None</span>,
+}
 
 <span class="macro">glib::wrapper! </span>{
     <span class="kw">pub struct </span>Window(ObjectSubclass&lt;imp::Window&gt;)
@@ -1140,6 +1201,7 @@
                 ),
             ),
             ProcError::InvalidRegister(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
+            ProcError::Generic(s) =&gt; <span class="self">self</span>.show_info(MessageType::Error, <span class="string">"Erro"</span>, <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{s}"</span>)),
         }
     }
 }

@@ -486,6 +486,9 @@
 <a href="#485" id="485">485</a>
 <a href="#486" id="486">486</a>
 <a href="#487" id="487">487</a>
+<a href="#488" id="488">488</a>
+<a href="#489" id="489">489</a>
+<a href="#490" id="490">490</a>
 </pre></div><pre class="rust"><code><span class="kw">pub mod </span>errors;
 <span class="kw">pub mod </span>instructions;
 <span class="kw">pub mod </span>modules;
@@ -494,6 +497,7 @@
 
 <span class="kw">use </span>isa::{Instruction, MemoryCell};
 <span class="kw">use </span>log::{debug, info, warn};
+<span class="kw">use </span>modules::video::Pixelmap;
 <span class="kw">use </span>std::{
     fmt::Display,
     sync::{Arc, Mutex},
@@ -528,7 +532,10 @@
     <span class="comment">// Stack Pointer
     </span>sp: usize,
 
+    pixel: <span class="prelude-ty">Option</span>&lt;(Pixelmap, usize)&gt;,
+
     halted: bool,
+    debug: bool,
 }
 
 <span class="kw">impl </span>Default <span class="kw">for </span>Processor {
@@ -563,7 +570,9 @@
             pc: <span class="number">0</span>,
             ir: <span class="number">0</span>,
             sp: <span class="number">0</span>,
+            pixel: <span class="prelude-val">None</span>,
             halted: <span class="bool-val">false</span>,
+            debug: <span class="bool-val">false</span>,
         }
     }
 
@@ -573,7 +582,7 @@
     /// # **Importante**
     ///
     /// Deve ser utilizado somente para testes!
-    </span><span class="kw">pub fn </span>debug(s: usize) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>new_debug(s: usize) -&gt; <span class="self">Self </span>{
         <span class="macro">warn!</span>(
             <span class="string">"Novo processador para DEBUG criado. [Tamanho da Memória {}] [Número de Registradores {}]"</span>,
             s, NUM_REGISTERS
@@ -596,7 +605,9 @@
             pc: <span class="number">0</span>,
             ir: <span class="number">0</span>,
             sp: <span class="number">0</span>,
+            pixel: <span class="prelude-val">None</span>,
             halted: <span class="bool-val">false</span>,
+            debug: <span class="bool-val">false</span>,
         }
     }
 
@@ -708,7 +719,7 @@
         }
     }
 
-    <span class="doccomment">/// Retorna o valor presente no campo RX do registrador IR.
+    <span class="doccomment">/// Retorna o valor presente no campo `RX` do registrador `IR`.
     ///
     /// # Mapeamento
     ///
@@ -719,7 +730,7 @@
         <span class="self">self</span>.rx
     }
 
-    <span class="doccomment">/// Retorna o valor presente no campo RY do registrador IR.
+    <span class="doccomment">/// Retorna o valor presente no campo `RY` do registrador `IR`.
     ///
     /// # Mapeamento
     ///
@@ -730,7 +741,7 @@
         <span class="self">self</span>.ry
     }
 
-    <span class="doccomment">/// Retorna o valor presente no campo RZ do registrador IR.
+    <span class="doccomment">/// Retorna o valor presente no campo `RZ` do registrador `IR`.
     ///
     /// # Mapeamento
     ///
@@ -744,6 +755,7 @@
     <span class="doccomment">/// Retorna o valor da `i`-ésima *flag* do registrador *Flag Register*.
     ///
     /// &gt; ⚠️ **Atenção**  
+    /// &gt;
     /// &gt; É recomendado utilizar os índices mapeados em [`isa::FlagIndex`] para evitar erros e
     /// &gt; comportamentos indesejados.
     ///
@@ -762,7 +774,8 @@
 
     <span class="doccomment">/// Altera o valor do *bit* `i` do registrador *Flag Register* para o valor `v`.
     ///
-    /// &gt; ⚠️ **Atenção**  
+    /// &gt; ⚠️ **Atenção**
+    /// &gt;
     /// &gt; É recomendado utilizar os índices mapeados em [`isa::FlagIndex`] para evitar erros e
     /// &gt; comportamentos indesejados.
     ///
@@ -877,6 +890,28 @@
     }
 
     <span class="attr">#[warn(missing_docs)]
+    </span><span class="kw">pub fn </span>set_debug(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: bool) {
+        <span class="self">self</span>.debug = value
+    }
+
+    <span class="attr">#[warn(missing_docs)]
+    </span><span class="kw">pub fn </span>debug(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.halted
+    }
+
+    <span class="attr">#[warn(missing_docs)]
+    </span><span class="kw">pub fn </span>set_pixel(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: <span class="prelude-ty">Option</span>&lt;(Pixelmap, usize)&gt;) {
+        <span class="self">self</span>.pixel = value
+    }
+
+    <span class="attr">#[warn(missing_docs)]
+    </span><span class="kw">pub fn </span>pixel(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(Pixelmap, usize)&gt; {
+        <span class="kw">let </span>p = <span class="self">self</span>.pixel;
+        <span class="self">self</span>.pixel = <span class="prelude-val">None</span>;
+        p
+    }
+
+    <span class="attr">#[warn(missing_docs)]
     </span><span class="kw">pub fn </span>ula_operation(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.set_fr(isa::FlagIndex::GREATER, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
         <span class="self">self</span>.set_fr(isa::FlagIndex::LESSER, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
@@ -912,7 +947,7 @@
     }
 
     <span class="attr">#[warn(missing_docs)]
-    </span><span class="kw">fn </span>execution_cicle(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
+    </span><span class="kw">fn </span>execution_cicle(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.rx = isa::bits(<span class="self">self</span>.ir, <span class="number">7</span>..=<span class="number">9</span>);
         <span class="self">self</span>.ry = isa::bits(<span class="self">self</span>.ir, <span class="number">4</span>..=<span class="number">6</span>);
         <span class="self">self</span>.rz = isa::bits(<span class="self">self</span>.ir, <span class="number">1</span>..=<span class="number">3</span>);
@@ -923,44 +958,15 @@
     }
 
     <span class="attr">#[warn(missing_docs)]
-    </span><span class="kw">pub fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
+    </span><span class="kw">pub fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if </span>!<span class="self">self</span>.halted {
             <span class="self">self</span>.search_cicle()<span class="question-mark">?</span>;
-            <span class="self">self</span>.execution_cicle()
+            <span class="kw">let </span>r = <span class="self">self</span>.execution_cicle();
+            <span class="macro">debug!</span>(<span class="string">"{self}"</span>);
+            r
         } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
+            <span class="prelude-val">Ok</span>(())
         }
-    }
-
-    <span class="attr">#[warn(missing_docs)]
-    </span><span class="kw">pub fn </span>state(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; (
-        usize,
-        usize,
-        usize,
-        usize,
-        usize,
-        usize,
-        usize,
-        usize,
-        usize,
-        usize,
-        usize,
-    ) {
-        (
-            <span class="self">self</span>.registers[<span class="number">0</span>],
-            <span class="self">self</span>.registers[<span class="number">1</span>],
-            <span class="self">self</span>.registers[<span class="number">2</span>],
-            <span class="self">self</span>.registers[<span class="number">3</span>],
-            <span class="self">self</span>.registers[<span class="number">4</span>],
-            <span class="self">self</span>.registers[<span class="number">5</span>],
-            <span class="self">self</span>.registers[<span class="number">6</span>],
-            <span class="self">self</span>.registers[<span class="number">7</span>],
-            <span class="self">self</span>.pc,
-            <span class="self">self</span>.sp,
-            <span class="self">self</span>.ir,
-        )
     }
 }
 

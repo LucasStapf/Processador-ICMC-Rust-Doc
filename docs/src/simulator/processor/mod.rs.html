@@ -136,34 +136,117 @@
 <a href="#135" id="135">135</a>
 <a href="#136" id="136">136</a>
 <a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
 </pre></div><pre class="rust"><code><span class="kw">pub mod </span>instructions;
 
+<span class="kw">use </span>adw::glib;
 <span class="kw">use </span>async_channel::{Receiver, Sender};
-<span class="kw">use </span>log::error;
+<span class="kw">use </span>cairo::glib::clone;
+<span class="kw">use </span>log::{debug, error};
 <span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>processor::{errors::ProcError, Processor};
-<span class="kw">use </span>std::sync::{Arc, Mutex};
+<span class="kw">use </span>std::{
+    sync::{Arc, Mutex},
+    thread,
+    time::Duration,
+};
 <span class="kw">use </span>tokio::runtime::Runtime;
 
-<span class="kw">static </span>RUNTIME: Lazy&lt;Runtime&gt; =
+<span class="kw">use </span><span class="kw">crate</span>::ui::window::InfoType;
+
+<span class="kw">pub static </span>RUNTIME: Lazy&lt;Runtime&gt; =
     Lazy::new(|| Runtime::new().expect(<span class="string">"Setting up tokio runtime needs to succeed."</span>));
 
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub enum </span>RunMode {
     Run,
-    Debug(bool),
+    Debug,
 }
 
 <span class="kw">impl </span>Default <span class="kw">for </span>RunMode {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-        RunMode::Debug(<span class="bool-val">false</span>)
+        RunMode::Debug
     }
 }
 
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>ProcessorManager {
-    <span class="kw">pub </span>mode: Arc&lt;Mutex&lt;RunMode&gt;&gt;,
+    <span class="kw">pub </span>mode: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;RunMode&gt;&gt;&gt;,
     <span class="kw">pub </span>processor: Arc&lt;Mutex&lt;Processor&gt;&gt;,
+    <span class="kw">pub </span>error: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;ProcError&gt;&gt;&gt;,
     <span class="kw">pub </span>tx: <span class="prelude-ty">Option</span>&lt;Sender&lt;<span class="prelude-ty">Option</span>&lt;ProcError&gt;&gt;&gt;,
     <span class="kw">pub </span>rx: <span class="prelude-ty">Option</span>&lt;Receiver&lt;bool&gt;&gt;,
 }
@@ -173,6 +256,7 @@
         <span class="self">Self </span>{
             mode: Default::default(),
             processor: Default::default(),
+            error: Arc::new(Mutex::new(<span class="prelude-val">None</span>)),
             tx: <span class="prelude-val">None</span>,
             rx: <span class="prelude-val">None</span>,
         }
@@ -187,90 +271,154 @@
         pm
     }
 
-    <span class="kw">pub fn </span>run(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(tx) = <span class="self">self</span>.tx.clone() {
-            <span class="kw">let </span>mode = <span class="self">self</span>.mode.clone();
-            <span class="kw">let </span>processor = <span class="self">self</span>.processor.clone();
-            RUNTIME.spawn(<span class="kw">async move </span>{
-                <span class="kw">loop </span>{
-                    <span class="kw">let </span><span class="kw-2">mut </span>error: <span class="prelude-ty">Option</span>&lt;ProcError&gt; = <span class="prelude-val">None</span>;
-                    <span class="kw">let </span><span class="kw-2">mut </span>bool_mode = <span class="bool-val">false</span>;
-                    <span class="kw">let </span><span class="kw-2">mut </span>bool_error = <span class="bool-val">false</span>;
-                    <span class="kw">match </span>mode.lock() {
-                        <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>m) =&gt; <span class="kw">match </span><span class="kw-2">*</span>m {
-                            RunMode::Run =&gt; (),
-                            RunMode::Debug(b) =&gt; <span class="kw">match </span>b {
-                                <span class="bool-val">true </span>=&gt; {
-                                    <span class="kw-2">*</span>m = RunMode::Debug(<span class="bool-val">false</span>);
-                                    bool_mode = <span class="bool-val">true</span>;
-                                }
-                                <span class="bool-val">false </span>=&gt; <span class="kw">continue</span>,
-                            },
-                        },
-                        <span class="prelude-val">Err</span>(e) =&gt; {
-                            <span class="macro">error!</span>(<span class="string">"{e}"</span>);
-                            error = <span class="prelude-val">Some</span>(ProcError::ProcessorPanic);
-                            bool_error = <span class="bool-val">true</span>;
-                        }
-                    }
+    <span class="kw">pub fn </span>run(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: Sender&lt;InfoType&lt;ProcError&gt;&gt;) {
+        <span class="kw">let </span>m = <span class="self">self</span>.mode.clone();
+        <span class="kw">let </span>p = <span class="self">self</span>.processor.clone();
 
-                    <span class="kw">if </span>bool_error {
-                        <span class="kw">match </span>tx.send(error).<span class="kw">await </span>{
-                            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="kw">break</span>,
-                            <span class="prelude-val">Err</span>(e) =&gt; {
-                                <span class="macro">error!</span>(<span class="string">"{e}"</span>);
-                                <span class="kw">break</span>;
-                            }
-                        }
-                    }
-
-                    <span class="kw">match </span>processor.lock() {
-                        <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>p) =&gt; <span class="kw">match </span>p.next() {
-                            <span class="prelude-val">Ok</span>(b) =&gt; {
-                                <span class="kw">if </span>b == <span class="bool-val">false </span>{
-                                    <span class="kw-2">*</span>mode.lock().unwrap() = RunMode::Debug(<span class="bool-val">false</span>);
-                                    bool_mode = <span class="bool-val">true</span>;
-                                }
-                                <span class="comment">// p.set_mem(4, 0b1011111011000000).unwrap();
-                                </span>p.set_mem(<span class="number">2</span>, <span class="number">0b1100001111000000</span>).unwrap();
-                                p.set_mem(<span class="number">5</span>, <span class="number">0b1110011111000000</span>).unwrap();
-                                p.set_mem(<span class="number">6</span>, <span class="number">0xA2</span>).unwrap();
-                                p.set_mem(<span class="number">10000</span>, <span class="number">0b0011100000000000</span>).unwrap();
-                            } <span class="comment">// TIRAR DPS SO TEST
-                            </span><span class="prelude-val">Err</span>(e) =&gt; {
-                                <span class="macro">error!</span>(<span class="string">"{e}"</span>);
-                                error = <span class="prelude-val">Some</span>(e);
-                                bool_error = <span class="bool-val">true</span>;
+        RUNTIME.spawn(<span class="kw">async move </span>{
+            <span class="kw">loop </span>{
+                <span class="kw">let </span>mode_test;
+                <span class="kw">match </span>m.lock() {
+                    <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>mode) =&gt; <span class="kw">match </span>mode.as_ref() {
+                        <span class="prelude-val">Some</span>(m) =&gt; <span class="kw">match </span>m {
+                            RunMode::Run =&gt; mode_test = RunMode::Run,
+                            RunMode::Debug =&gt; {
+                                <span class="kw-2">*</span>mode = <span class="prelude-val">None</span>;
+                                mode_test = RunMode::Debug;
                             }
                         },
-                        <span class="prelude-val">Err</span>(e) =&gt; {
-                            <span class="macro">error!</span>(<span class="string">"{e}"</span>);
-                            bool_error = <span class="bool-val">true</span>;
-                        }
-                    }
-
-                    <span class="kw">if </span>bool_error {
-                        <span class="kw">match </span>tx.send(error).<span class="kw">await </span>{
-                            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="kw">break</span>,
-                            <span class="prelude-val">Err</span>(e) =&gt; {
-                                <span class="macro">error!</span>(<span class="string">"{e}"</span>);
-                                <span class="kw">break</span>;
-                            }
-                        }
-                    }
-
-                    <span class="kw">if </span>bool_mode {
-                        <span class="kw">match </span>tx.send(error).<span class="kw">await </span>{
-                            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; (),
-                            <span class="prelude-val">Err</span>(e) =&gt; {
-                                <span class="macro">error!</span>(<span class="string">"{e}"</span>);
-                                <span class="kw">break</span>;
-                            }
-                        }
+                        <span class="prelude-val">None </span>=&gt; <span class="kw">continue</span>,
+                    },
+                    <span class="prelude-val">Err</span>(e) =&gt; {
+                        <span class="macro">error!</span>(<span class="string">"{e}"</span>);
+                        tx.send_blocking(InfoType::Error(ProcError::ProcessorPanic))
+                            .expect(<span class="string">"Falha ao enviar o erro!"</span>);
+                        <span class="kw">break</span>;
                     }
                 }
-            });
-        }
+
+                <span class="kw">let </span>pixel_test;
+                <span class="kw">match </span>p.lock() {
+                    <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>p) =&gt; <span class="kw">match </span>p.next() {
+                        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; pixel_test = p.pixel(),
+                        <span class="prelude-val">Err</span>(e) =&gt; {
+                            <span class="macro">error!</span>(<span class="string">"{e}"</span>);
+                            tx.send_blocking(InfoType::Error(e))
+                                .expect(<span class="string">"Falha ao enviar o erro!"</span>);
+                            <span class="kw">break</span>;
+                        }
+                    },
+                    <span class="prelude-val">Err</span>(e) =&gt; {
+                        <span class="macro">error!</span>(<span class="string">"{e}"</span>);
+                        tx.send_blocking(InfoType::Error(ProcError::ProcessorPanic))
+                            .expect(<span class="string">"Falha ao enviar o erro!"</span>);
+                        <span class="kw">break</span>;
+                    }
+                }
+
+                <span class="kw">match </span>mode_test {
+                    RunMode::Run =&gt; (),
+                    RunMode::Debug =&gt; tx
+                        .send(InfoType::UpdateUI)
+                        .<span class="kw">await
+                        </span>.expect(<span class="string">"Falha ao enviar mensagem UpdateUI"</span>),
+                }
+
+                <span class="kw">match </span>pixel_test {
+                    <span class="prelude-val">Some</span>((p, i)) =&gt; tx
+                        .send(InfoType::UpdateScreen(p, i))
+                        .<span class="kw">await
+                        </span>.expect(<span class="string">"Falha ao enviar mensagem UpdateUI"</span>),
+                    <span class="prelude-val">None </span>=&gt; (),
+                }
+            }
+        });
     }
-}
+
+    <span class="comment">// pub fn run(&amp;self) {
+    //     if let Some(tx) = self.tx.clone() {
+    //         let mode = self.mode.clone();
+    //         let processor = self.processor.clone();
+    //         RUNTIME.spawn(async move {
+    //             loop {
+    //                 let mut error: Option&lt;ProcError&gt; = None;
+    //                 let mut bool_mode = false;
+    //                 let mut bool_error = false;
+    //                 match mode.lock() {
+    //                     Ok(mut m) =&gt; match *m {
+    //                         RunMode::Run =&gt; (),
+    //                         RunMode::Debug(b) =&gt; match b {
+    //                             true =&gt; {
+    //                                 *m = RunMode::Debug(false);
+    //                                 bool_mode = true;
+    //                             }
+    //                             false =&gt; continue,
+    //                         },
+    //                     },
+    //                     Err(e) =&gt; {
+    //                         error!("{e}");
+    //                         error = Some(ProcError::ProcessorPanic);
+    //                         bool_error = true;
+    //                     }
+    //                 }
+    //
+    //                 if bool_error {
+    //                     match tx.send(error).await {
+    //                         Ok(_) =&gt; break,
+    //                         Err(e) =&gt; {
+    //                             error!("{e}");
+    //                             break;
+    //                         }
+    //                     }
+    //                 }
+    //
+    //                 match processor.lock() {
+    //                     Ok(mut p) =&gt; match p.next() {
+    //                         Ok(b) =&gt; {
+    //                             if b == false {
+    //                                 *mode.lock().unwrap() = RunMode::Debug(false);
+    //                                 bool_mode = true;
+    //                             }
+    //                             // p.set_mem(4, 0b1011111011000000).unwrap();
+    //                             p.set_mem(2, 0b1100001111000000).unwrap();
+    //                             p.set_mem(5, 0b1110011111000000).unwrap();
+    //                             p.set_mem(6, 0xA2).unwrap();
+    //                             p.set_mem(10000, 0b0011100000000000).unwrap();
+    //                         } // TIRAR DPS SO TEST
+    //                         Err(e) =&gt; {
+    //                             error!("{e}");
+    //                             error = Some(e);
+    //                             bool_error = true;
+    //                         }
+    //                     },
+    //                     Err(e) =&gt; {
+    //                         error!("{e}");
+    //                         bool_error = true;
+    //                     }
+    //                 }
+    //
+    //                 if bool_error {
+    //                     match tx.send(error).await {
+    //                         Ok(_) =&gt; break,
+    //                         Err(e) =&gt; {
+    //                             error!("{e}");
+    //                             break;
+    //                         }
+    //                     }
+    //                 }
+    //
+    //                 if bool_mode {
+    //                     match tx.send(error).await {
+    //                         Ok(_) =&gt; (),
+    //                         Err(e) =&gt; {
+    //                             error!("{e}");
+    //                             break;
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         });
+    //     }
+    // }
+</span>}
 </code></pre></div></section></main></body></html>

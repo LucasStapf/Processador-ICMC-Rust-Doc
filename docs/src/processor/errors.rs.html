@@ -43,6 +43,8 @@
 <a href="#42" id="42">42</a>
 <a href="#43" id="43">43</a>
 <a href="#44" id="44">44</a>
+<a href="#45" id="45">45</a>
+<a href="#46" id="46">46</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{error::Error, fmt::Display};
 
 <span class="attr">#[derive(Debug, Clone, PartialEq)]
@@ -55,6 +57,7 @@
     InvalidMemoryIndex(usize),
     InvalidInstruction(usize),
     InvalidRegister(usize),
+    Generic(String),
 }
 
 <span class="kw">impl </span>Display <span class="kw">for </span>ProcError {
@@ -82,6 +85,7 @@
             ProcError::InvalidRegister(r) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"Registrador inválido: {}"</span>, r)
             }
+            ProcError::Generic(s) =&gt; <span class="macro">write!</span>(f, <span class="string">"{s}"</span>),
         }
     }
 }

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Color","VideoError"],"struct":["VideoModule"],"type":["Pixelmap","VideoBuffer"]};
+window.SIDEBAR_ITEMS = {"constant":["VIDEO_BUFFER_LENGHT"],"enum":["Color","VideoError"],"struct":["VideoModule"],"type":["Pixelmap","VideoBuffer"]};

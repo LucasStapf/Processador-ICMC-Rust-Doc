@@ -377,15 +377,46 @@
 <a href="#376" id="376">376</a>
 <a href="#377" id="377">377</a>
 <a href="#378" id="378">378</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{ProcError, Processor};
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::modules::video;
+
+<span class="kw">use super</span>::{ProcError, Processor};
 <span class="kw">use </span>isa::{FlagIndex, Instruction, MAX_VALUE_MEMORY};
 
 <span class="kw">pub trait </span>InstructionCicle {
-    <span class="kw">fn </span>execution(<span class="kw-2">&amp;</span><span class="self">self</span>, processor: <span class="kw-2">&amp;mut </span>Processor) -&gt; <span class="prelude-ty">Result</span>&lt;bool, ProcError&gt;;
+    <span class="kw">fn </span>execution(<span class="kw-2">&amp;</span><span class="self">self</span>, processor: <span class="kw-2">&amp;mut </span>Processor) -&gt; <span class="prelude-ty">Result</span>&lt;(), ProcError&gt;;
 }
 
 <span class="kw">impl </span>InstructionCicle <span class="kw">for </span>Instruction {
-    <span class="kw">fn </span>execution(<span class="kw-2">&amp;</span><span class="self">self</span>, p: <span class="kw-2">&amp;mut </span>Processor) -&gt; <span class="prelude-ty">Result</span>&lt;bool, ProcError&gt; {
+    <span class="kw">fn </span>execution(<span class="kw-2">&amp;</span><span class="self">self</span>, p: <span class="kw-2">&amp;mut </span>Processor) -&gt; <span class="prelude-ty">Result</span>&lt;(), ProcError&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             Instruction::InvalidInstruction =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ProcError::InvalidInstruction(p.ir())),
 
@@ -425,7 +456,34 @@
 
             Instruction::INPUT =&gt; <span class="macro">todo!</span>(),
             Instruction::OUTPUT =&gt; <span class="macro">todo!</span>(),
-            Instruction::OUTCHAR =&gt; <span class="macro">todo!</span>(),
+
+            Instruction::OUTCHAR =&gt; {
+                <span class="kw">let </span>index = p.reg(p.ry())<span class="question-mark">?</span>;
+                <span class="kw">if </span>index &gt; video::VIDEO_BUFFER_LENGHT {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(ProcError::InvalidIndex(
+                        index,
+                        <span class="prelude-val">Some</span>(<span class="macro">format!</span>(
+                            <span class="string">"Índice inválido. O índice deve pertencer ao intervalo 0 até {}"</span>,
+                            video::VIDEO_BUFFER_LENGHT
+                        )),
+                    ));
+                }
+
+                <span class="kw">let </span>c = isa::bits(p.reg(p.rx())<span class="question-mark">?</span>, <span class="number">0</span>..=<span class="number">7</span>) <span class="kw">as </span>u8;
+                <span class="kw">let </span>color_code = isa::bits(p.reg(p.rx())<span class="question-mark">?</span>, <span class="number">8</span>..=<span class="number">15</span>);
+                <span class="kw">let </span>color = video::Color::color(color_code);
+
+                <span class="kw">match </span>color {
+                    <span class="prelude-val">Some</span>(color) =&gt; {
+                        <span class="kw">let </span>pixel = ((c, color), index);
+                        p.set_pixel(<span class="prelude-val">Some</span>(pixel));
+                    }
+                    <span class="prelude-val">None </span>=&gt; {
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(ProcError::Generic(<span class="macro">format!</span>(<span class="string">"Cor inválida: {}"</span>, color_code)))
+                    }
+                }
+            }
+
             Instruction::INCHAR =&gt; <span class="macro">todo!</span>(),
             Instruction::SOUND =&gt; <span class="macro">todo!</span>(),
 
@@ -733,10 +791,10 @@
             Instruction::SETC =&gt; {
                 p.set_fr(FlagIndex::CARRY, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
             }
-            Instruction::BREAKP =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">false</span>),
+            Instruction::BREAKP =&gt; p.set_debug(<span class="bool-val">true</span>),
         }
 
-        <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
+        <span class="prelude-val">Ok</span>(())
     }
 }
 
@@ -747,7 +805,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_invalid_instruction() {
-        <span class="kw">let </span><span class="kw-2">mut </span>p = Processor::debug(<span class="number">10</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>p = Processor::new_debug(<span class="number">10</span>);
         <span class="kw">let _ </span>= p.set_mem(<span class="number">0</span>, <span class="number">0b1011110000000000</span>);
         <span class="macro">assert_eq!</span>(
             ProcError::InvalidInstruction(<span class="number">0b1011110000000000</span>),

@@ -71,7 +71,7 @@
 <span class="kw">const </span>APP_ID: <span class="kw-2">&amp;</span>str = <span class="string">"org.ProcessadorICMC"</span>;
 
 <span class="kw">fn </span>main() -&gt; glib::ExitCode {
-    std::env::set_var(<span class="string">"RUST_LOG"</span>, <span class="string">"debug"</span>);
+    std::env::set_var(<span class="string">"RUST_LOG"</span>, <span class="string">"info"</span>);
 
     <span class="macro">gio::resources_register_include!</span>(<span class="string">"compile.gresource"</span>)
         .expect(<span class="string">"Falha ao carregar os recursos de UI."</span>);

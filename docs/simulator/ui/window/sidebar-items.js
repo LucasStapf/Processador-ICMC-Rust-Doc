@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["NumberFormat"],"mod":["imp"],"struct":["Window","WindowData"]};
+window.SIDEBAR_ITEMS = {"enum":["InfoType","NumberFormat"],"mod":["imp"],"struct":["Window","WindowData"]};

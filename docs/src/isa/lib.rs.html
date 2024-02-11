@@ -1385,6 +1385,49 @@
 <a href="#1384" id="1384">1384</a>
 <a href="#1385" id="1385">1385</a>
 <a href="#1386" id="1386">1386</a>
+<a href="#1387" id="1387">1387</a>
+<a href="#1388" id="1388">1388</a>
+<a href="#1389" id="1389">1389</a>
+<a href="#1390" id="1390">1390</a>
+<a href="#1391" id="1391">1391</a>
+<a href="#1392" id="1392">1392</a>
+<a href="#1393" id="1393">1393</a>
+<a href="#1394" id="1394">1394</a>
+<a href="#1395" id="1395">1395</a>
+<a href="#1396" id="1396">1396</a>
+<a href="#1397" id="1397">1397</a>
+<a href="#1398" id="1398">1398</a>
+<a href="#1399" id="1399">1399</a>
+<a href="#1400" id="1400">1400</a>
+<a href="#1401" id="1401">1401</a>
+<a href="#1402" id="1402">1402</a>
+<a href="#1403" id="1403">1403</a>
+<a href="#1404" id="1404">1404</a>
+<a href="#1405" id="1405">1405</a>
+<a href="#1406" id="1406">1406</a>
+<a href="#1407" id="1407">1407</a>
+<a href="#1408" id="1408">1408</a>
+<a href="#1409" id="1409">1409</a>
+<a href="#1410" id="1410">1410</a>
+<a href="#1411" id="1411">1411</a>
+<a href="#1412" id="1412">1412</a>
+<a href="#1413" id="1413">1413</a>
+<a href="#1414" id="1414">1414</a>
+<a href="#1415" id="1415">1415</a>
+<a href="#1416" id="1416">1416</a>
+<a href="#1417" id="1417">1417</a>
+<a href="#1418" id="1418">1418</a>
+<a href="#1419" id="1419">1419</a>
+<a href="#1420" id="1420">1420</a>
+<a href="#1421" id="1421">1421</a>
+<a href="#1422" id="1422">1422</a>
+<a href="#1423" id="1423">1423</a>
+<a href="#1424" id="1424">1424</a>
+<a href="#1425" id="1425">1425</a>
+<a href="#1426" id="1426">1426</a>
+<a href="#1427" id="1427">1427</a>
+<a href="#1428" id="1428">1428</a>
+<a href="#1429" id="1429">1429</a>
 </pre></div><pre class="rust"><code><span class="doccomment">///! *Instruction Set Architecture - ISA*
 </span><span class="kw">use </span>std::ops::RangeInclusive;
 
@@ -1568,7 +1611,7 @@
     <span class="doccomment">/// Salva no endereço `END` da memória o valor presente no registrador `Rx`.
     ///
     /// # Operação
-    /// MEM(`END`) ← Rx
+    /// MEM(`END`) ← `Rx`
     ///
     /// # Uso
     /// ```asm
@@ -1637,7 +1680,50 @@
 
     INPUT       <span class="string">"111110----------"</span>, <span class="comment">// Peripheric Instructions
     </span>OUTPUT      <span class="string">"111111----------"</span>,
-    OUTCHAR     <span class="string">"110010----------"</span>, <span class="comment">// IO Instructions
+
+    <span class="doccomment">/// Imprime na tela do processador um *char* mapeado de um arquivo *charmap*. O código do
+    /// *pixelmap* que representa o desenho do *char* está codificado no *low-byte* do registrador
+    /// `Rx`, enquanto que sua cor se encontra no *high-byte*. A posição do *char* é armazenada
+    /// no registrador `Ry`.
+    ///
+    /// # Cores
+    /// As cores mapeadas atualmente com seus respectivos códigos são:
+    /// 1. &lt;span style="background-color:white"&gt;⠀⠀&lt;/span&gt; White --- 0
+    /// 2. &lt;span style="background-color:brown"&gt;⠀⠀&lt;/span&gt; Brown --- 256
+    /// 3. &lt;span style="background-color:green"&gt;⠀⠀&lt;/span&gt; Green --- 512
+    /// 4. &lt;span style="background-color:olive"&gt;⠀⠀&lt;/span&gt; Olive --- 768
+    /// 5. &lt;span style="background-color:navy"&gt;⠀⠀&lt;/span&gt; Navy --- 1024
+    /// 6. &lt;span style="background-color:purple"&gt;⠀⠀&lt;/span&gt; Purple --- 1280
+    /// 7. &lt;span style="background-color:teal"&gt;⠀⠀&lt;/span&gt; Teal --- 1536
+    /// 8. &lt;span style="background-color:silver"&gt;⠀⠀&lt;/span&gt; Silver --- 1792
+    /// 9. &lt;span style="background-color:gray"&gt;⠀⠀&lt;/span&gt; Gray --- 2048
+    /// 10. &lt;span style="background-color:red"&gt;⠀⠀&lt;/span&gt; Red --- 2304
+    /// 11. &lt;span style="background-color:lime"&gt;⠀⠀&lt;/span&gt; Lime --- 2560
+    /// 12. &lt;span style="background-color:yellow"&gt;⠀⠀&lt;/span&gt; Yellow --- 2816
+    /// 13. &lt;span style="background-color:blue"&gt;⠀⠀&lt;/span&gt; Blue --- 3072
+    /// 14. &lt;span style="background-color:fuchsia"&gt;⠀⠀&lt;/span&gt; Fuchsia --- 3328
+    /// 15. &lt;span style="background-color:aqua"&gt;⠀⠀&lt;/span&gt; Aqua --- 3584
+    /// 16. &lt;span style="background-color:black"&gt;⠀⠀&lt;/span&gt; Black --- 3840
+    ///
+    /// Para imprimir o caracter colorido, basta somar o código do *char* ao código da cor.
+    ///
+    /// ## Exemplo
+    /// * &lt;span style="color:blue"&gt;A&lt;/span&gt; --- 37 (código da letra A) + 3072 (código da cor azul).
+    /// 
+    /// # Operação
+    /// VÍDEO(`Ry`) ← CHAR(`Rx`)
+    ///
+    /// # Uso
+    /// ```asm
+    /// OUTCHAR Rx, Ry
+    /// ```
+    ///
+    /// # Exemplo
+    /// ```asm
+    /// OUTCHAR R1, R0
+    /// ```
+    </span>OUTCHAR     <span class="string">"110010----------"</span>, <span class="comment">// IO Instructions
+
     </span>INCHAR      <span class="string">"110101----------"</span>,
     SOUND       <span class="string">"110100----------"</span>,
 

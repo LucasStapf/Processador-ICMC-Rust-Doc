@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ProcError"]};
+window.SIDEBAR_ITEMS = {"enum":["ProcessorError"]};

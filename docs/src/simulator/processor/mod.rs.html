@@ -210,6 +210,17 @@
 <a href="#209" id="209">209</a>
 <a href="#210" id="210">210</a>
 <a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
 </pre></div><pre class="rust"><code><span class="kw">pub mod </span>instructions;
 
 <span class="kw">use </span>adw::glib;
@@ -217,7 +228,7 @@
 <span class="kw">use </span>cairo::glib::clone;
 <span class="kw">use </span>log::{debug, error};
 <span class="kw">use </span>once_cell::sync::Lazy;
-<span class="kw">use </span>processor::{errors::ProcError, Processor};
+<span class="kw">use </span>processor::{errors::ProcessorError, Processor};
 <span class="kw">use </span>std::{
     sync::{Arc, Mutex},
     thread,
@@ -246,8 +257,8 @@
 </span><span class="kw">pub struct </span>ProcessorManager {
     <span class="kw">pub </span>mode: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;RunMode&gt;&gt;&gt;,
     <span class="kw">pub </span>processor: Arc&lt;Mutex&lt;Processor&gt;&gt;,
-    <span class="kw">pub </span>error: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;ProcError&gt;&gt;&gt;,
-    <span class="kw">pub </span>tx: <span class="prelude-ty">Option</span>&lt;Sender&lt;<span class="prelude-ty">Option</span>&lt;ProcError&gt;&gt;&gt;,
+    <span class="kw">pub </span>error: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;ProcessorError&gt;&gt;&gt;,
+    <span class="kw">pub </span>tx: <span class="prelude-ty">Option</span>&lt;Sender&lt;<span class="prelude-ty">Option</span>&lt;ProcessorError&gt;&gt;&gt;,
     <span class="kw">pub </span>rx: <span class="prelude-ty">Option</span>&lt;Receiver&lt;bool&gt;&gt;,
 }
 
@@ -264,16 +275,21 @@
 }
 
 <span class="kw">impl </span>ProcessorManager {
-    <span class="kw">pub fn </span>new(tx: <span class="prelude-ty">Option</span>&lt;Sender&lt;<span class="prelude-ty">Option</span>&lt;ProcError&gt;&gt;&gt;, rx: <span class="prelude-ty">Option</span>&lt;Receiver&lt;bool&gt;&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(tx: <span class="prelude-ty">Option</span>&lt;Sender&lt;<span class="prelude-ty">Option</span>&lt;ProcessorError&gt;&gt;&gt;, rx: <span class="prelude-ty">Option</span>&lt;Receiver&lt;bool&gt;&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>pm = ProcessorManager::default();
         pm.tx = tx;
         pm.rx = rx;
         pm
     }
 
-    <span class="kw">pub fn </span>run(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: Sender&lt;InfoType&lt;ProcError&gt;&gt;) {
+    <span class="kw">pub fn </span>run(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: Sender&lt;InfoType&lt;ProcessorError&gt;&gt;) {
         <span class="kw">let </span>m = <span class="self">self</span>.mode.clone();
         <span class="kw">let </span>p = <span class="self">self</span>.processor.clone();
+
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>p) = p.lock() {
+            p.set_mem(<span class="number">4</span>, <span class="number">0b1110010000000000</span>);
+            p.set_mem(<span class="number">5</span>, <span class="number">0b0000110000000000</span>);
+        }
 
         RUNTIME.spawn(<span class="kw">async move </span>{
             <span class="kw">loop </span>{
@@ -291,8 +307,11 @@
                     },
                     <span class="prelude-val">Err</span>(e) =&gt; {
                         <span class="macro">error!</span>(<span class="string">"{e}"</span>);
-                        tx.send_blocking(InfoType::Error(ProcError::ProcessorPanic))
-                            .expect(<span class="string">"Falha ao enviar o erro!"</span>);
+                        tx.send_blocking(InfoType::Error(ProcessorError::Generic {
+                            title: <span class="string">"Erro inesperado"</span>.to_string(),
+                            description: e.to_string(),
+                        }))
+                        .expect(<span class="string">"Falha ao enviar o erro!"</span>);
                         <span class="kw">break</span>;
                     }
                 }
@@ -310,8 +329,11 @@
                     },
                     <span class="prelude-val">Err</span>(e) =&gt; {
                         <span class="macro">error!</span>(<span class="string">"{e}"</span>);
-                        tx.send_blocking(InfoType::Error(ProcError::ProcessorPanic))
-                            .expect(<span class="string">"Falha ao enviar o erro!"</span>);
+                        tx.send_blocking(InfoType::Error(ProcessorError::Generic {
+                            title: <span class="string">"Erro inesperado"</span>.to_string(),
+                            description: e.to_string(),
+                        }))
+                        .expect(<span class="string">"Falha ao enviar o erro!"</span>);
                         <span class="kw">break</span>;
                     }
                 }

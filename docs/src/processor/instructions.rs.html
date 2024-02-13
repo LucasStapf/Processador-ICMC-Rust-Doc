@@ -406,19 +406,30 @@
 <a href="#405" id="405">405</a>
 <a href="#406" id="406">406</a>
 <a href="#407" id="407">407</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::modules::video;
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+</pre></div><pre class="rust"><code><span class="kw">use crate</span>::{errors::ProcessorError, modules::video};
 
-<span class="kw">use super</span>::{ProcError, Processor};
+<span class="kw">use </span><span class="kw">super</span>::Processor;
 <span class="kw">use </span>isa::{FlagIndex, Instruction, MAX_VALUE_MEMORY};
 
 <span class="kw">pub trait </span>InstructionCicle {
-    <span class="kw">fn </span>execution(<span class="kw-2">&amp;</span><span class="self">self</span>, processor: <span class="kw-2">&amp;mut </span>Processor) -&gt; <span class="prelude-ty">Result</span>&lt;(), ProcError&gt;;
+    <span class="kw">fn </span>execution(<span class="kw-2">&amp;</span><span class="self">self</span>, processor: <span class="kw-2">&amp;mut </span>Processor) -&gt; <span class="prelude-ty">Result</span>&lt;(), ProcessorError&gt;;
 }
 
 <span class="kw">impl </span>InstructionCicle <span class="kw">for </span>Instruction {
-    <span class="kw">fn </span>execution(<span class="kw-2">&amp;</span><span class="self">self</span>, p: <span class="kw-2">&amp;mut </span>Processor) -&gt; <span class="prelude-ty">Result</span>&lt;(), ProcError&gt; {
+    <span class="kw">fn </span>execution(<span class="kw-2">&amp;</span><span class="self">self</span>, p: <span class="kw-2">&amp;mut </span>Processor) -&gt; <span class="prelude-ty">Result</span>&lt;(), ProcessorError&gt; {
         <span class="kw">match </span><span class="self">self </span>{
-            Instruction::InvalidInstruction =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ProcError::InvalidInstruction(p.ir())),
+            Instruction::InvalidInstruction =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(ProcessorError::InvalidInstruction(p.ir()))
+            }
 
             Instruction::LOAD =&gt; {
                 p.set_reg(p.rx(), p.mem(p.mem(p.pc())<span class="question-mark">?</span>)<span class="question-mark">?</span>)<span class="question-mark">?</span>;
@@ -460,13 +471,14 @@
             Instruction::OUTCHAR =&gt; {
                 <span class="kw">let </span>index = p.reg(p.ry())<span class="question-mark">?</span>;
                 <span class="kw">if </span>index &gt; video::VIDEO_BUFFER_LENGHT {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(ProcError::InvalidIndex(
-                        index,
-                        <span class="prelude-val">Some</span>(<span class="macro">format!</span>(
-                            <span class="string">"Índice inválido. O índice deve pertencer ao intervalo 0 até {}"</span>,
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(ProcessorError::Generic {
+                        title: <span class="string">"Índice inválido na Mémoria de Vídeo"</span>.to_string(),
+                        description: <span class="macro">format!</span>(
+                            <span class="string">"O índice {} não pertence ao intervalo de 0 a {}."</span>,
+                            index,
                             video::VIDEO_BUFFER_LENGHT
-                        )),
-                    ));
+                        ),
+                    });
                 }
 
                 <span class="kw">let </span>c = isa::bits(p.reg(p.rx())<span class="question-mark">?</span>, <span class="number">0</span>..=<span class="number">7</span>) <span class="kw">as </span>u8;
@@ -479,7 +491,13 @@
                         p.set_pixel(<span class="prelude-val">Some</span>(pixel));
                     }
                     <span class="prelude-val">None </span>=&gt; {
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(ProcError::Generic(<span class="macro">format!</span>(<span class="string">"Cor inválida: {}"</span>, color_code)))
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(ProcessorError::Generic {
+                            title: <span class="string">"Cor inválida"</span>.to_string(),
+                            description: <span class="macro">format!</span>(
+                                <span class="string">"O código {} não representa nenhuma cor mapeada."</span>,
+                                color_code
+                            ),
+                        });
                     }
                 }
             }
@@ -808,7 +826,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>p = Processor::new_debug(<span class="number">10</span>);
         <span class="kw">let _ </span>= p.set_mem(<span class="number">0</span>, <span class="number">0b1011110000000000</span>);
         <span class="macro">assert_eq!</span>(
-            ProcError::InvalidInstruction(<span class="number">0b1011110000000000</span>),
+            ProcessorError::InvalidInstruction(<span class="number">0b1011110000000000</span>),
             p.next().err().unwrap()
         )
     }

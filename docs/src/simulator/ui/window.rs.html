@@ -614,6 +614,74 @@
 <a href="#613" id="613">613</a>
 <a href="#614" id="614">614</a>
 <a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
+<a href="#617" id="617">617</a>
+<a href="#618" id="618">618</a>
+<a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
+<a href="#624" id="624">624</a>
+<a href="#625" id="625">625</a>
+<a href="#626" id="626">626</a>
+<a href="#627" id="627">627</a>
+<a href="#628" id="628">628</a>
+<a href="#629" id="629">629</a>
+<a href="#630" id="630">630</a>
+<a href="#631" id="631">631</a>
+<a href="#632" id="632">632</a>
+<a href="#633" id="633">633</a>
+<a href="#634" id="634">634</a>
+<a href="#635" id="635">635</a>
+<a href="#636" id="636">636</a>
+<a href="#637" id="637">637</a>
+<a href="#638" id="638">638</a>
+<a href="#639" id="639">639</a>
+<a href="#640" id="640">640</a>
+<a href="#641" id="641">641</a>
+<a href="#642" id="642">642</a>
+<a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a>
+<a href="#654" id="654">654</a>
+<a href="#655" id="655">655</a>
+<a href="#656" id="656">656</a>
+<a href="#657" id="657">657</a>
+<a href="#658" id="658">658</a>
+<a href="#659" id="659">659</a>
+<a href="#660" id="660">660</a>
+<a href="#661" id="661">661</a>
+<a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
+<a href="#664" id="664">664</a>
+<a href="#665" id="665">665</a>
+<a href="#666" id="666">666</a>
+<a href="#667" id="667">667</a>
+<a href="#668" id="668">668</a>
+<a href="#669" id="669">669</a>
+<a href="#670" id="670">670</a>
+<a href="#671" id="671">671</a>
+<a href="#672" id="672">672</a>
+<a href="#673" id="673">673</a>
+<a href="#674" id="674">674</a>
+<a href="#675" id="675">675</a>
+<a href="#676" id="676">676</a>
+<a href="#677" id="677">677</a>
+<a href="#678" id="678">678</a>
+<a href="#679" id="679">679</a>
+<a href="#680" id="680">680</a>
+<a href="#681" id="681">681</a>
+<a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
 </pre></div><pre class="rust"><code><span class="kw">mod </span>imp {
 
     <span class="kw">use </span>adw::glib;
@@ -629,7 +697,7 @@
     <span class="kw">use </span>gtk::{gdk, CompositeTemplate, Entry, Label, ToggleButton};
     <span class="kw">use </span>log::debug;
     <span class="kw">use </span>log::error;
-    <span class="kw">use </span>processor::errors::ProcError;
+    <span class="kw">use </span>processor::errors::ProcessorError;
     <span class="kw">use </span>std::sync::Arc;
     <span class="kw">use </span>std::sync::Mutex;
     <span class="kw">use </span>std::thread;
@@ -757,8 +825,8 @@
     <span class="kw">impl </span>Window {
         <span class="kw">fn </span>processor_start(
             <span class="kw-2">&amp;</span><span class="self">self</span>,
-            tx: Sender&lt;InfoType&lt;ProcError&gt;&gt;,
-            rx: Receiver&lt;InfoType&lt;ProcError&gt;&gt;,
+            tx: Sender&lt;InfoType&lt;ProcessorError&gt;&gt;,
+            rx: Receiver&lt;InfoType&lt;ProcessorError&gt;&gt;,
         ) {
             <span class="self">self</span>.data.borrow_mut().processor_manager.run(tx);
 
@@ -784,7 +852,10 @@
                                 <span class="kw-2">*</span>m = mode;
                             }
                         }
-                        InfoType::Error(e) =&gt; win.show_error_dialog_processor(e),
+                        InfoType::Error(e) =&gt; {
+                            win.show_error_dialog_processor(e);
+                            win.update_ui()
+                        }
                         InfoType::None =&gt; (),
                     }
                 }
@@ -849,6 +920,8 @@
     </span><span class="kw">impl </span>ApplicationWindowImpl <span class="kw">for </span>Window {}
 }
 
+<span class="kw">use </span>std::ops::RangeBounds;
+
 <span class="kw">use </span><span class="kw">crate</span>::mem_row::MemoryCellRow;
 <span class="kw">use </span><span class="kw">crate</span>::processor::RunMode;
 <span class="kw">use </span>adw::prelude::<span class="kw-2">*</span>;
@@ -858,7 +931,7 @@
 <span class="kw">use </span>gtk::glib::subclass::types::ObjectSubclassIsExt;
 <span class="kw">use </span>gtk::MessageType;
 <span class="kw">use </span>log::error;
-<span class="kw">use </span>processor::errors::ProcError;
+<span class="kw">use </span>processor::errors::ProcessorError;
 <span class="kw">use </span>processor::modules::video::Pixelmap;
 
 <span class="kw">use </span><span class="kw">crate</span>::processor::{instructions::InstructionDisplay, ProcessorManager};
@@ -1000,131 +1073,182 @@
                 .and_downcast::&lt;MemoryCellRow&gt;()
             {
                 <span class="kw">loop </span>{
-                    <span class="kw">let </span>float = <span class="kw">match </span>i {
+                    <span class="comment">// Label do PC ou SP
+                    </span><span class="kw">let </span>float = <span class="kw">match </span>i {
                         n <span class="kw">if </span>n == p.pc() =&gt; <span class="prelude-val">Some</span>(<span class="string">"&lt;b&gt;PC&lt;/b&gt;"</span>),
+                        n <span class="kw">if </span>n == p.sp() =&gt; <span class="prelude-val">Some</span>(<span class="string">"&lt;b&gt;SP&lt;/b&gt;"</span>),
                         <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
                     };
 
-                    <span class="kw">let </span>raw = p
-                        .mem(i)
-                        .expect(<span class="string">"Foi utilizado um índice inválido para atualizar o memory-view."</span>);
+                    <span class="comment">// Verifica qual área da memória será mostrada.
+                    </span><span class="kw">match </span>i {
+                        addr <span class="kw">if </span>isa::memory::layout::ADDR_PROG_AND_VAR.contains(<span class="kw-2">&amp;</span>addr) =&gt; {
+                            <span class="kw">let </span>raw = p.mem(i).expect(
+                                <span class="string">"Foi utilizado um índice inválido para atualizar o memory-view."</span>,
+                            );
 
-                    <span class="kw">let </span>inst = isa::Instruction::get_instruction(raw);
-                    cell.update(i, <span class="kw-2">&amp;</span>inst.display(i, <span class="kw-2">&amp;</span>p), raw, float);
-                    i = i.saturating_add(<span class="number">1</span>).clamp(<span class="number">0</span>, processor::MEMORY_SIZE - <span class="number">1</span>);
+                            <span class="kw">let </span>inst = isa::Instruction::get_instruction(raw);
+                            cell.update(i, <span class="kw-2">&amp;</span>inst.display(i, <span class="kw-2">&amp;</span>p), raw, float);
+                            cell.set_float_address(<span class="kw-2">&amp;</span>isa::memory::layout::data_area(i));
+                            cell.set_float_instruction(<span class="string">"Instruction"</span>);
+                            i = i.saturating_add(<span class="number">1</span>).clamp(<span class="number">0</span>, processor::MEMORY_SIZE - <span class="number">1</span>);
+                            cell.remove_css_class(<span class="string">"error"</span>);
 
-                    cell.remove_css_class(<span class="string">"error"</span>);
-                    <span class="kw">match </span>inst {
-                        isa::Instruction::InvalidInstruction =&gt; cell.add_css_class(<span class="string">"error"</span>),
-                        isa::Instruction::LOAD
-                        | isa::Instruction::LOADN
-                        | isa::Instruction::STORE
-                        | isa::Instruction::JZ
-                        | isa::Instruction::JC
-                        | isa::Instruction::JN
-                        | isa::Instruction::JMP
-                        | isa::Instruction::JEQ
-                        | isa::Instruction::JNE
-                        | isa::Instruction::JNZ
-                        | isa::Instruction::JNC
-                        | isa::Instruction::JGR
-                        | isa::Instruction::JLE
-                        | isa::Instruction::JEG
-                        | isa::Instruction::JEL
-                        | isa::Instruction::JOV
-                        | isa::Instruction::JNO
-                        | isa::Instruction::JDZ
-                        | isa::Instruction::CZ
-                        | isa::Instruction::CC
-                        | isa::Instruction::CN
-                        | isa::Instruction::CEQ
-                        | isa::Instruction::CNE
-                        | isa::Instruction::CNZ
-                        | isa::Instruction::CNC
-                        | isa::Instruction::CGR
-                        | isa::Instruction::CEG
-                        | isa::Instruction::CEL
-                        | isa::Instruction::COV
-                        | isa::Instruction::CNO
-                        | isa::Instruction::CDZ
-                        | isa::Instruction::CLE
-                        | isa::Instruction::CALL =&gt; {
-                            <span class="kw">if let </span><span class="prelude-val">Some</span>(n) = cell.next_sibling().and_downcast::&lt;MemoryCellRow&gt;() {
-                                cell = n;
-                                cell.update(
-                                    i,
-                                    <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"#0x{:X}"</span>, p.mem(i).unwrap()),
-                                    p.mem(i).unwrap(),
-                                    <span class="prelude-val">None</span>,
-                                );
-                                i = i.saturating_add(<span class="number">1</span>).clamp(<span class="number">0</span>, processor::MEMORY_SIZE - <span class="number">1</span>);
+                            <span class="kw">match </span>inst {
+                                isa::Instruction::InvalidInstruction =&gt; cell.add_css_class(<span class="string">"error"</span>),
+                                isa::Instruction::LOAD
+                                | isa::Instruction::STORE
+                                | isa::Instruction::JZ
+                                | isa::Instruction::JC
+                                | isa::Instruction::JN
+                                | isa::Instruction::JMP
+                                | isa::Instruction::JEQ
+                                | isa::Instruction::JNE
+                                | isa::Instruction::JNZ
+                                | isa::Instruction::JNC
+                                | isa::Instruction::JGR
+                                | isa::Instruction::JLE
+                                | isa::Instruction::JEG
+                                | isa::Instruction::JEL
+                                | isa::Instruction::JOV
+                                | isa::Instruction::JNO
+                                | isa::Instruction::JDZ
+                                | isa::Instruction::CZ
+                                | isa::Instruction::CC
+                                | isa::Instruction::CN
+                                | isa::Instruction::CEQ
+                                | isa::Instruction::CNE
+                                | isa::Instruction::CNZ
+                                | isa::Instruction::CNC
+                                | isa::Instruction::CGR
+                                | isa::Instruction::CEG
+                                | isa::Instruction::CEL
+                                | isa::Instruction::COV
+                                | isa::Instruction::CNO
+                                | isa::Instruction::CDZ
+                                | isa::Instruction::CLE
+                                | isa::Instruction::CALL =&gt; {
+                                    <span class="kw">if let </span><span class="prelude-val">Some</span>(n) =
+                                        cell.next_sibling().and_downcast::&lt;MemoryCellRow&gt;()
+                                    {
+                                        cell = n;
+                                        cell.update(
+                                            i,
+                                            <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"#0x{:X}"</span>, p.mem(i).unwrap()),
+                                            p.mem(i).unwrap(),
+                                            <span class="prelude-val">None</span>,
+                                        );
+                                        cell.set_float_address(<span class="kw-2">&amp;</span>isa::memory::layout::data_area(i));
+                                        cell.set_float_instruction(<span class="string">"Address"</span>);
+                                        i = i
+                                            .saturating_add(<span class="number">1</span>)
+                                            .clamp(<span class="number">0</span>, processor::MEMORY_SIZE - <span class="number">1</span>);
+                                    }
+                                }
+
+                                isa::Instruction::LOADI
+                                | isa::Instruction::STOREI
+                                | isa::Instruction::MOV
+                                | isa::Instruction::INCHAR
+                                | isa::Instruction::OUTCHAR
+                                | isa::Instruction::ADD
+                                | isa::Instruction::SUB
+                                | isa::Instruction::ADDC
+                                | isa::Instruction::SUBC
+                                | isa::Instruction::MUL
+                                | isa::Instruction::DIV
+                                | isa::Instruction::INC
+                                | isa::Instruction::DEC
+                                | isa::Instruction::MOD
+                                | isa::Instruction::AND
+                                | isa::Instruction::OR
+                                | isa::Instruction::XOR
+                                | isa::Instruction::NOT
+                                | isa::Instruction::CMP
+                                | isa::Instruction::ROTL
+                                | isa::Instruction::ROTR
+                                | isa::Instruction::SHIFTL0
+                                | isa::Instruction::SHIFTL1
+                                | isa::Instruction::SHIFTR0
+                                | isa::Instruction::SHIFTR1
+                                | isa::Instruction::RTS
+                                | isa::Instruction::RTI
+                                | isa::Instruction::POP
+                                | isa::Instruction::PUSH
+                                | isa::Instruction::NOP
+                                | isa::Instruction::HALT
+                                | isa::Instruction::SETC
+                                | isa::Instruction::CLEARC
+                                | isa::Instruction::BREAKP =&gt; (),
+
+                                isa::Instruction::LOADN =&gt; {
+                                    <span class="kw">if let </span><span class="prelude-val">Some</span>(n) =
+                                        cell.next_sibling().and_downcast::&lt;MemoryCellRow&gt;()
+                                    {
+                                        cell = n;
+                                        cell.update(
+                                            i,
+                                            <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"#0x{:X}"</span>, p.mem(i).unwrap()),
+                                            p.mem(i).unwrap(),
+                                            <span class="prelude-val">None</span>,
+                                        );
+                                        cell.set_float_address(<span class="kw-2">&amp;</span>isa::memory::layout::data_area(i));
+                                        cell.set_float_instruction(<span class="string">"Data"</span>);
+                                        i = i
+                                            .saturating_add(<span class="number">1</span>)
+                                            .clamp(<span class="number">0</span>, processor::MEMORY_SIZE - <span class="number">1</span>);
+                                    }
+                                }
+
+                                isa::Instruction::STOREN =&gt; {
+                                    <span class="kw">if let </span><span class="prelude-val">Some</span>(next) =
+                                        cell.next_sibling().and_downcast::&lt;MemoryCellRow&gt;()
+                                    {
+                                        cell = next;
+                                        cell.update(
+                                            i,
+                                            <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"#0x{:X}"</span>, p.mem(i).unwrap()),
+                                            p.mem(i).unwrap(),
+                                            <span class="prelude-val">None</span>,
+                                        );
+                                        cell.set_float_address(<span class="kw-2">&amp;</span>isa::memory::layout::data_area(i));
+                                        cell.set_float_instruction(<span class="string">"Address"</span>);
+                                        i = i
+                                            .saturating_add(<span class="number">1</span>)
+                                            .clamp(<span class="number">0</span>, processor::MEMORY_SIZE - <span class="number">1</span>);
+                                    }
+
+                                    <span class="kw">if let </span><span class="prelude-val">Some</span>(next) =
+                                        cell.next_sibling().and_downcast::&lt;MemoryCellRow&gt;()
+                                    {
+                                        cell = next;
+                                        cell.update(
+                                            i,
+                                            <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"#0x{:X}"</span>, p.mem(i).unwrap()),
+                                            p.mem(i).unwrap(),
+                                            <span class="prelude-val">None</span>,
+                                        );
+                                        cell.set_float_address(<span class="kw-2">&amp;</span>isa::memory::layout::data_area(i));
+                                        cell.set_float_instruction(<span class="string">"Data"</span>);
+                                        i = i
+                                            .saturating_add(<span class="number">1</span>)
+                                            .clamp(<span class="number">0</span>, processor::MEMORY_SIZE - <span class="number">1</span>);
+                                    }
+                                }
+
+                                isa::Instruction::INPUT =&gt; <span class="macro">todo!</span>(),
+                                isa::Instruction::OUTPUT =&gt; <span class="macro">todo!</span>(),
+                                isa::Instruction::SOUND =&gt; <span class="macro">todo!</span>(),
                             }
                         }
-
-                        isa::Instruction::LOADI
-                        | isa::Instruction::STOREI
-                        | isa::Instruction::MOV
-                        | isa::Instruction::INCHAR
-                        | isa::Instruction::OUTCHAR
-                        | isa::Instruction::ADD
-                        | isa::Instruction::SUB
-                        | isa::Instruction::ADDC
-                        | isa::Instruction::SUBC
-                        | isa::Instruction::MUL
-                        | isa::Instruction::DIV
-                        | isa::Instruction::INC
-                        | isa::Instruction::DEC
-                        | isa::Instruction::MOD
-                        | isa::Instruction::AND
-                        | isa::Instruction::OR
-                        | isa::Instruction::XOR
-                        | isa::Instruction::NOT
-                        | isa::Instruction::CMP
-                        | isa::Instruction::ROTL
-                        | isa::Instruction::ROTR
-                        | isa::Instruction::SHIFTL0
-                        | isa::Instruction::SHIFTL1
-                        | isa::Instruction::SHIFTR0
-                        | isa::Instruction::SHIFTR1
-                        | isa::Instruction::RTS
-                        | isa::Instruction::RTI
-                        | isa::Instruction::POP
-                        | isa::Instruction::PUSH
-                        | isa::Instruction::NOP
-                        | isa::Instruction::HALT
-                        | isa::Instruction::SETC
-                        | isa::Instruction::CLEARC
-                        | isa::Instruction::BREAKP =&gt; (),
-
-                        isa::Instruction::STOREN =&gt; {
-                            <span class="kw">if let </span><span class="prelude-val">Some</span>(next) = cell.next_sibling().and_downcast::&lt;MemoryCellRow&gt;()
-                            {
-                                cell = next;
-                                cell.update(
-                                    i,
-                                    <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"#0x{:X}"</span>, p.mem(i).unwrap()),
-                                    p.mem(i).unwrap(),
-                                    <span class="prelude-val">None</span>,
-                                );
-                                i = i.saturating_add(<span class="number">1</span>).clamp(<span class="number">0</span>, processor::MEMORY_SIZE - <span class="number">1</span>);
-                            }
-
-                            <span class="kw">if let </span><span class="prelude-val">Some</span>(next) = cell.next_sibling().and_downcast::&lt;MemoryCellRow&gt;()
-                            {
-                                cell = next;
-                                cell.update(
-                                    i,
-                                    <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"#0x{:X}"</span>, p.mem(i).unwrap()),
-                                    p.mem(i).unwrap(),
-                                    <span class="prelude-val">None</span>,
-                                );
-                                i = i.saturating_add(<span class="number">1</span>).clamp(<span class="number">0</span>, processor::MEMORY_SIZE - <span class="number">1</span>);
-                            }
+                        <span class="kw">_ </span>=&gt; {
+                            <span class="kw">let </span>value = p.mem(i).unwrap();
+                            cell.update(i, <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"#{}"</span>, value), value, float);
+                            cell.set_float_address(<span class="kw-2">&amp;</span>isa::memory::layout::data_area(i));
+                            cell.set_float_instruction(<span class="string">"Data"</span>);
+                            i = i.saturating_add(<span class="number">1</span>).clamp(<span class="number">0</span>, processor::MEMORY_SIZE - <span class="number">1</span>);
+                            cell.remove_css_class(<span class="string">"error"</span>);
                         }
-
-                        isa::Instruction::INPUT =&gt; <span class="macro">todo!</span>(),
-                        isa::Instruction::OUTPUT =&gt; <span class="macro">todo!</span>(),
-                        isa::Instruction::SOUND =&gt; <span class="macro">todo!</span>(),
                     }
 
                     <span class="kw">match </span>cell.next_sibling().and_downcast::&lt;MemoryCellRow&gt;() {
@@ -1155,54 +1279,66 @@
         <span class="self">self</span>.imp().revealer_info_top.set_reveal_child(<span class="bool-val">false</span>);
     }
 
-    <span class="kw">pub fn </span>show_error_dialog_processor(<span class="kw-2">&amp;</span><span class="self">self</span>, error: ProcError) {
+    <span class="kw">pub fn </span>show_error_dialog_processor(<span class="kw-2">&amp;</span><span class="self">self</span>, error: ProcessorError) {
         <span class="kw">match </span>error {
-            ProcError::ProcessorPanic =&gt; <span class="self">self</span>.show_info(
+            ProcessorError::SegmentationFault { pc, data_area } =&gt; <span class="self">self</span>.show_info(
                 MessageType::Error,
-                <span class="string">"Erro interno"</span>,
-                <span class="string">"Alguma &lt;i&gt;thread&lt;/i&gt; que utilizava o processador falhou."</span>,
+                <span class="string">"Segmentation fault"</span>,
+                <span class="string">"O registrador &lt;b&gt;PC&lt;/b&gt; está apontando para um endereço de uma região da memória não permitida."</span>,
             ),
-            ProcError::ChannelClosed =&gt; <span class="self">self</span>.show_info(
-                MessageType::Error,
-                <span class="string">"Erro interno"</span>,
-                <span class="string">"Não foi possível trocar dados entre as &lt;i&gt;threads&lt;/i&gt; do programa."</span>,
-            ),
-            ProcError::ChannelEmpty =&gt; <span class="macro">todo!</span>(),
-            ProcError::MaximumMemoryReached =&gt; <span class="self">self</span>.show_info(
-                MessageType::Error,
-                <span class="string">"Limite máximo da memória atingido"</span>,
-                <span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                    <span class="string">"O registrador &lt;b&gt;PC&lt;/b&gt; tentou ultrapassar o limite da memória ({}). \
-                    Dica: utilize a instrução &lt;i&gt;HALT&lt;/i&gt; no fim do seu programa para evitar \
-                    esse problema."</span>,
-                    processor::MEMORY_SIZE - <span class="number">1
-                </span>),
-            ),
-            ProcError::InvalidIndex(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
-            ProcError::InvalidMemoryIndex(i) =&gt; <span class="self">self</span>.show_info(
-                MessageType::Error,
-                <span class="string">"Índice inválido"</span>,
-                <span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                    <span class="string">"O índice {}, utilizado para acessar a memória do processador, é inválido. \
-                    Índices válidos estão entre 0 e {}."</span>,
-                    i,
-                    processor::MEMORY_SIZE - <span class="number">1
-                </span>),
-            ),
-
-            ProcError::InvalidInstruction(i) =&gt; <span class="self">self</span>.show_info(
-                MessageType::Error,
-                <span class="string">"Instrução inválida"</span>,
-                <span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                    <span class="string">"O valor {:016b} não corresponde a nenhuma instrução válida. \
-                    Verifique se o arquivo &lt;b&gt;.mif&lt;/b&gt; está correto ou se o \
-                    conjunto de instruções utilizado é compatível com a versão do simulador."</span>,
-                    i
-                ),
-            ),
-            ProcError::InvalidRegister(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
-            ProcError::Generic(s) =&gt; <span class="self">self</span>.show_info(MessageType::Error, <span class="string">"Erro"</span>, <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{s}"</span>)),
-        }
+            ProcessorError::StackOverflow(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
+            ProcessorError::StackUnderflow(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
+            ProcessorError::InvalidAddress(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
+            ProcessorError::InvalidInstruction(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
+            ProcessorError::InvalidRegister(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
+            ProcessorError::InvalidFlag(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
+            ProcessorError::Generic { title, description } =&gt; <span class="macro">todo!</span>(),
+            <span class="comment">// ProcError::ProcessorPanic =&gt; self.show_info(
+            //     MessageType::Error,
+            //     "Erro interno",
+            //     "Alguma &lt;i&gt;thread&lt;/i&gt; que utilizava o processador falhou.",
+            // ),
+            // ProcError::ChannelClosed =&gt; self.show_info(
+            //     MessageType::Error,
+            //     "Erro interno",
+            //     "Não foi possível trocar dados entre as &lt;i&gt;threads&lt;/i&gt; do programa.",
+            // ),
+            // ProcError::ChannelEmpty =&gt; todo!(),
+            // ProcError::MaximumMemoryReached =&gt; self.show_info(
+            //     MessageType::Error,
+            //     "Limite máximo da memória atingido",
+            //     &amp;format!(
+            //         "O registrador &lt;b&gt;PC&lt;/b&gt; tentou ultrapassar o limite da memória ({}). \
+            //         Dica: utilize a instrução &lt;i&gt;HALT&lt;/i&gt; no fim do seu programa para evitar \
+            //         esse problema.",
+            //         processor::MEMORY_SIZE - 1
+            //     ),
+            // ),
+            // ProcError::InvalidIndex(_, _) =&gt; todo!(),
+            // ProcError::InvalidMemoryIndex(i) =&gt; self.show_info(
+            //     MessageType::Error,
+            //     "Índice inválido",
+            //     &amp;format!(
+            //         "O índice {}, utilizado para acessar a memória do processador, é inválido. \
+            //         Índices válidos estão entre 0 e {}.",
+            //         i,
+            //         processor::MEMORY_SIZE - 1
+            //     ),
+            // ),
+            //
+            // ProcError::InvalidInstruction(i) =&gt; self.show_info(
+            //     MessageType::Error,
+            //     "Instrução inválida",
+            //     &amp;format!(
+            //         "O valor {:016b} não corresponde a nenhuma instrução válida. \
+            //         Verifique se o arquivo &lt;b&gt;.mif&lt;/b&gt; está correto ou se o \
+            //         conjunto de instruções utilizado é compatível com a versão do simulador.",
+            //         i
+            //     ),
+            // ),
+            // ProcError::InvalidRegister(_) =&gt; todo!(),
+            // ProcError::Generic(s) =&gt; self.show_info(MessageType::Error, "Erro", &amp;format!("{s}")),
+        </span>}
     }
 }
 

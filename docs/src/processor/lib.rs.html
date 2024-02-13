@@ -489,12 +489,15 @@
 <a href="#488" id="488">488</a>
 <a href="#489" id="489">489</a>
 <a href="#490" id="490">490</a>
-</pre></div><pre class="rust"><code><span class="kw">pub mod </span>errors;
+</pre></div><pre class="rust"><code><span class="attr">#![allow(dead_code, unused_imports, missing_docs)]
+
+</span><span class="kw">pub mod </span>errors;
 <span class="kw">pub mod </span>instructions;
 <span class="kw">pub mod </span>modules;
 
 <span class="kw">use </span><span class="kw">crate</span>::instructions::InstructionCicle;
 
+<span class="kw">use </span>errors::ProcessorError;
 <span class="kw">use </span>isa::{Instruction, MemoryCell};
 <span class="kw">use </span>log::{debug, info, warn};
 <span class="kw">use </span>modules::video::Pixelmap;
@@ -502,8 +505,6 @@
     fmt::Display,
     sync::{Arc, Mutex},
 };
-
-<span class="kw">use </span><span class="self">self</span>::errors::ProcError;
 
 <span class="doccomment">/// Tamanho da memória do processador, ou seja, número de endereços disponíveis para o
 /// funcionamento do dispositivo.
@@ -514,7 +515,7 @@
 
 <span class="kw">pub const </span>MAX_VALUE_MEMORY: usize = <span class="number">2_usize</span>.pow(isa::BITS_ADDRESS <span class="kw">as </span>u32) - <span class="number">1</span>;
 
-<span class="kw">type </span><span class="prelude-ty">Result</span>&lt;T&gt; = std::result::Result&lt;T, ProcError&gt;;
+<span class="kw">type </span><span class="prelude-ty">Result</span>&lt;T&gt; = std::result::Result&lt;T, ProcessorError&gt;;
 
 <span class="kw">pub struct </span>Processor {
     memory: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;, <span class="comment">// pub temp
@@ -615,11 +616,12 @@
         <span class="self">self</span>.memory.clone()
     }
 
-    <span class="doccomment">/// Retorna o valor presente na memória de índice `i`.
+    <span class="doccomment">/// Retorna o valor presente no endereço `addr` da memória.
     ///
     /// # Erros
     ///
-    /// Retorna o erro [`ProcError::InvalidMemoryIndex`] caso o índice seja inválido.
+    /// - [`ProcessorError::InvalidAddress`] caso o endereço seja inválido.
+    /// - [`ProcessorError::Generic`] em caso de [`std::sync::PoisonError`].
     ///
     /// # Exemplo
     ///
@@ -630,22 +632,25 @@
     /// assert_eq!(0x0, p.mem(0).unwrap());
     ///
     /// ```
-    </span><span class="kw">pub fn </span>mem(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+    </span><span class="kw">pub fn </span>mem(<span class="kw-2">&amp;</span><span class="self">self</span>, addr: MemoryCell) -&gt; <span class="prelude-ty">Result</span>&lt;MemoryCell&gt; {
         <span class="kw">match </span><span class="self">self</span>.memory.lock() {
-            <span class="prelude-val">Ok</span>(m) =&gt; <span class="kw">match </span>m.get(i) {
+            <span class="prelude-val">Ok</span>(m) =&gt; <span class="kw">match </span>m.get(addr) {
                 <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>v) =&gt; <span class="prelude-val">Ok</span>(v),
-                <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ProcError::InvalidMemoryIndex(i)),
+                <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ProcessorError::InvalidAddress(addr)),
             },
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(ProcError::ProcessorPanic),
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(ProcessorError::Generic {
+                title: <span class="string">"Erro inesperado"</span>.to_string(),
+                description: e.to_string(),
+            }),
         }
     }
 
-    <span class="doccomment">/// Altera o valor da memória no índice `i` para `v`.
+    <span class="doccomment">/// Altera o valor salvo no endereço `addr` para `v`.
     ///
     /// # Erros
     ///
-    /// Retorna o erro [`ProcError::InvalidMemoryIndex`] caso o índice `i` seja
-    /// inválido.
+    /// - [`ProcessorError::InvalidAddress`] caso o endereço seja inválido.
+    /// - [`ProcessorError::Generic`] em caso de [`std::sync::PoisonError`].
     ///
     /// # Exemplo
     ///
@@ -657,24 +662,27 @@
     /// p.set_mem(0, 0x1);
     /// assert_eq!(0x1, p.mem(0).unwrap());
     /// ```
-    </span><span class="kw">pub fn </span>set_mem(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: usize, v: usize) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>set_mem(<span class="kw-2">&amp;mut </span><span class="self">self</span>, adrr: MemoryCell, v: MemoryCell) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">match </span><span class="self">self</span>.memory.lock() {
-            <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>m) =&gt; <span class="kw">match </span>m.get_mut(i) {
+            <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>m) =&gt; <span class="kw">match </span>m.get_mut(adrr) {
                 <span class="prelude-val">Some</span>(m) =&gt; {
                     <span class="kw-2">*</span>m = v;
                     <span class="prelude-val">Ok</span>(())
                 }
-                <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ProcError::InvalidMemoryIndex(i)),
+                <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ProcessorError::InvalidAddress(adrr)),
             },
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(ProcError::ProcessorPanic),
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(ProcessorError::Generic {
+                title: <span class="string">"Erro inesperado"</span>.to_string(),
+                description: e.to_string(),
+            }),
         }
     }
 
-    <span class="doccomment">/// Retorna o valor do registrador `n` (`n` é o índice do vetor de registradores).
+    <span class="doccomment">/// Retorna o valor do registrador `n`.
     ///
     /// # Erros
     ///
-    /// Retorna o erro [`ProcError::InvalidRegister`] caso o registrador `n` seja
+    /// Retorna o erro [`ProcessorError::InvalidRegister`] caso o registrador `n` seja
     /// inválido.
     ///
     /// # Exemplo
@@ -685,10 +693,10 @@
     /// let mut p = Processor::new();
     /// assert_eq!(0x0, p.reg(0).unwrap());
     /// ```
-    </span><span class="kw">pub fn </span>reg(<span class="kw-2">&amp;</span><span class="self">self</span>, n: usize) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+    </span><span class="kw">pub fn </span>reg(<span class="kw-2">&amp;</span><span class="self">self</span>, n: MemoryCell) -&gt; <span class="prelude-ty">Result</span>&lt;MemoryCell&gt; {
         <span class="kw">match </span><span class="self">self</span>.registers.get(n) {
             <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>r) =&gt; <span class="prelude-val">Ok</span>(r),
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ProcError::InvalidRegister(n)),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ProcessorError::InvalidRegister(n)),
         }
     }
 
@@ -696,7 +704,7 @@
     ///
     /// # Erros
     ///
-    /// Retorna o erro [`ProcError::InvalidRegister`] caso o registrador `n` seja
+    /// Retorna o erro [`ProcessorError::InvalidRegister`] caso o registrador `n` seja
     /// invalido.
     ///
     /// # Exemplo
@@ -709,13 +717,13 @@
     /// p.set_reg(0, 0x1);
     /// assert_eq!(0x1, p.reg(0).unwrap());
     /// ```
-    </span><span class="kw">pub fn </span>set_reg(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: usize, v: usize) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>set_reg(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: MemoryCell, v: MemoryCell) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">match </span><span class="self">self</span>.registers.get_mut(n) {
             <span class="prelude-val">Some</span>(r) =&gt; {
                 <span class="kw-2">*</span>r = v;
                 <span class="prelude-val">Ok</span>(())
             }
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ProcError::InvalidRegister(n)),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ProcessorError::InvalidRegister(n)),
         }
     }
 
@@ -726,7 +734,7 @@
     /// | Nº | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
     /// |:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
     /// | IR | -- | -- | -- | -- | -- | -- | RX | RX | RX | -- | -- | -- | -- | -- | -- | -- |
-    </span><span class="kw">pub fn </span>rx(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+    </span><span class="kw">pub fn </span>rx(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; MemoryCell {
         <span class="self">self</span>.rx
     }
 
@@ -737,7 +745,7 @@
     /// | Nº | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
     /// |:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
     /// | IR | -- | -- | -- | -- | -- | -- | -- | -- | -- | RY | RY | RY | -- | -- | -- | -- |
-    </span><span class="kw">pub fn </span>ry(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+    </span><span class="kw">pub fn </span>ry(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; MemoryCell {
         <span class="self">self</span>.ry
     }
 
@@ -748,7 +756,7 @@
     /// | Nº | 15 | 14 | 13 | 12 | 11 | 10 | 09 | 08 | 07 | 06 | 05 | 04 | 03 | 02 | 01 | 00 |
     /// |:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
     /// | IR | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | RZ | RZ | RZ | -- |
-    </span><span class="kw">pub fn </span>rz(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+    </span><span class="kw">pub fn </span>rz(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; MemoryCell {
         <span class="self">self</span>.rz
     }
 
@@ -761,14 +769,11 @@
     ///
     /// # Erros
     ///
-    /// Retorna o erro [`ProcError::InvalidIndex`] caso o valor `i` seja inválido.
+    /// Retorna o erro [`ProcessorError::InvalidFlag`] caso o valor `i` seja inválido.
     </span><span class="kw">pub fn </span>fr(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
         <span class="kw">match </span><span class="self">self</span>.fr.get(i) {
             <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>f) =&gt; <span class="prelude-val">Ok</span>(f),
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ProcError::InvalidIndex(
-                i,
-                <span class="prelude-val">Some</span>(<span class="string">"Índice do Flag Register inválido"</span>.to_string()),
-            )),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ProcessorError::InvalidFlag(i)),
         }
     }
 
@@ -781,85 +786,86 @@
     ///
     /// # Erros
     ///
-    /// Retorna o erro [`ProcError::InvalidIndex`] caso o valor `i` seja inválido.
+    /// Retorna o erro [`ProcessorError::InvalidFlag`] caso o valor `i` seja inválido.
     </span><span class="kw">pub fn </span>set_fr(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: usize, v: bool) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">match </span><span class="self">self</span>.fr.get_mut(i) {
             <span class="prelude-val">Some</span>(f) =&gt; {
                 <span class="kw-2">*</span>f = v;
                 <span class="prelude-val">Ok</span>(())
             }
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ProcError::InvalidIndex(
-                i,
-                <span class="prelude-val">Some</span>(<span class="string">"Índice do Flag Register inválido"</span>.to_string()),
-            )),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ProcessorError::InvalidFlag(i)),
         }
     }
 
     <span class="doccomment">/// Retorna o valor do registrador especial *Instruction Register*.
-    </span><span class="kw">pub fn </span>ir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+    </span><span class="kw">pub fn </span>ir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; MemoryCell {
         <span class="self">self</span>.ir
     }
 
     <span class="doccomment">/// Retorna o valor do registrador especial *Stack Pointer*.
-    </span><span class="kw">pub fn </span>sp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+    </span><span class="kw">pub fn </span>sp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; MemoryCell {
         <span class="self">self</span>.sp
     }
 
-    <span class="doccomment">/// Altera o valor do registrador especial *Stack Pointer* para `v`.
+    <span class="doccomment">/// Altera o valor do registrador especial *Stack Pointer* para `addr`.
     ///
     /// # Erros
     ///
-    /// Retorna o erro [`ProcError::MaximumMemoryReached`] caso o valor `v` seja
-    /// maior que [`MEMORY_SIZE`].
-    </span><span class="kw">pub fn </span>set_sp(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: usize) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">return if </span>v &gt; MEMORY_SIZE {
-            <span class="prelude-val">Err</span>(ProcError::MaximumMemoryReached)
-        } <span class="kw">else </span>{
-            <span class="self">self</span>.sp = v;
-            <span class="prelude-val">Ok</span>(())
-        };
+    /// - [`ProcessorError::StackOverflow`] caso o `addr` seja menor que o topo da pilha.
+    /// - [`ProcessorError::StackUnderflow`] caso o `addr` seja maior que a base da pilha.
+    ///
+    </span><span class="kw">pub fn </span>set_sp(<span class="kw-2">&amp;mut </span><span class="self">self</span>, addr: MemoryCell) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.sp = addr;
+        <span class="kw">match </span>addr {
+            a <span class="kw">if </span>isa::memory::layout::ADDR_STACK.contains(<span class="kw-2">&amp;</span>a) =&gt; <span class="prelude-val">Ok</span>(()),
+            a <span class="kw">if </span>a &lt; <span class="kw-2">*</span>isa::memory::layout::ADDR_STACK.start() =&gt; {
+                <span class="prelude-val">Err</span>(ProcessorError::StackOverflow(addr))
+            }
+            a <span class="kw">if </span>a &gt; <span class="kw-2">*</span>isa::memory::layout::ADDR_STACK.end() =&gt; {
+                <span class="prelude-val">Err</span>(ProcessorError::StackUnderflow(addr))
+            }
+            <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
+        }
     }
 
     <span class="doccomment">/// Incrementa o valor do registrador especial *Stack Pointer* de um valor `v`.
     ///
     /// # Erros
     ///
-    /// Retorna o erro [`ProcError::MaximumMemoryReached`] caso o resultado da
-    /// soma seja maior que [`MEMORY_SIZE`] - 1.
-    /// É importante notar que neste caso o valor de SP **não** será atualizado.
-    </span><span class="kw">pub fn </span>inc_sp(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: usize) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">return if </span><span class="self">self</span>.sp + v &gt; MEMORY_SIZE - <span class="number">1 </span>{
-            <span class="prelude-val">Err</span>(ProcError::MaximumMemoryReached)
-        } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(<span class="self">self</span>.sp += v)
-        };
+    /// - [`ProcessorError::StackOverflow`] caso o resultado seja menor que o topo da pilha.
+    /// - [`ProcessorError::StackUnderflow`] caso o resultado seja maior que a base da pilha.
+    </span><span class="kw">pub fn </span>inc_sp(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: MemoryCell) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.set_sp(<span class="self">self</span>.sp() + v)
     }
 
     <span class="doccomment">/// Decrementa o valor do registrador especial *Stack Pointer* de um valor `v`.
     ///
     /// # Erros
     ///
-    /// Retorna o erro [`ProcError::InvalidMemoryIndex`] caso o resultado da
-    /// subtração seja menor que 0.
-    /// É importante notar que neste caso o valor de SP **não** será atualizado.
+    /// - [`ProcessorError::StackOverflow`] caso o resultado seja menor que o topo da pilha.
+    /// - [`ProcessorError::StackUnderflow`] caso o resultado seja maior que a base da pilha.
+    /// - [`ProcessorError::InvalidAddress`] caso o resultado seja negativo.
     </span><span class="kw">pub fn </span>dec_sp(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: usize) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">match </span><span class="self">self</span>.sp.checked_sub(v) {
-            <span class="prelude-val">Some</span>(r) =&gt; <span class="prelude-val">Ok</span>(<span class="self">self</span>.sp = r),
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ProcError::InvalidMemoryIndex(<span class="number">0</span>)), <span class="comment">// arrumar
+            <span class="prelude-val">Some</span>(r) =&gt; <span class="self">self</span>.set_sp(r),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ProcessorError::InvalidAddress(<span class="number">0</span>)), <span class="comment">// arrumar
         </span>}
     }
 
     <span class="doccomment">/// Retorna o valor do registrador especial *Program Counter*.
-    </span><span class="kw">pub fn </span>pc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+    </span><span class="kw">pub fn </span>pc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; MemoryCell {
         <span class="self">self</span>.pc
     }
 
     <span class="attr">#[warn(missing_docs)]
-    </span><span class="kw">pub fn </span>set_pc(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: usize) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">if </span>v &gt; MEMORY_SIZE - <span class="number">1 </span>{
-            <span class="prelude-val">Err</span>(ProcError::MaximumMemoryReached)
-        } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(<span class="self">self</span>.pc = v)
+    </span><span class="kw">pub fn </span>set_pc(<span class="kw-2">&amp;mut </span><span class="self">self</span>, addr: usize) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.pc = addr;
+        <span class="kw">match </span>addr {
+            a <span class="kw">if </span>isa::memory::layout::ADDR_PROG_AND_VAR.contains(<span class="kw-2">&amp;</span>a) =&gt; <span class="prelude-val">Ok</span>(()),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(ProcessorError::SegmentationFault {
+                pc: addr,
+                data_area: isa::memory::layout::data_area(addr),
+            }),
         }
     }
 
@@ -867,16 +873,10 @@
     ///
     /// # Erros
     ///
-    /// Retorna o erro [`ProcError::MaximumMemoryReached`] caso o resultado da
-    /// soma seja maior que [`MEMORY_SIZE`].
-    /// É importante notar que neste caso o valor de PC **não** será atualizado.
+    /// Retorna [`ProcessorError::SegmentationFault`] caso o resultado esteja fora da área de
+    /// programa e variáveis.
     </span><span class="kw">pub fn </span>inc_pc(<span class="kw-2">&amp;mut </span><span class="self">self</span>, v: usize) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">return if </span><span class="self">self</span>.pc + v &gt; MEMORY_SIZE - <span class="number">1 </span>{
-            <span class="prelude-val">Err</span>(ProcError::MaximumMemoryReached)
-        } <span class="kw">else </span>{
-            <span class="self">self</span>.pc += v;
-            <span class="prelude-val">Ok</span>(())
-        };
+        <span class="self">self</span>.set_pc(<span class="self">self</span>.pc + v)
     }
 
     <span class="attr">#[warn(missing_docs)]

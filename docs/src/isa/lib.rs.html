@@ -1428,8 +1428,12 @@
 <a href="#1427" id="1427">1427</a>
 <a href="#1428" id="1428">1428</a>
 <a href="#1429" id="1429">1429</a>
+<a href="#1430" id="1430">1430</a>
+<a href="#1431" id="1431">1431</a>
 </pre></div><pre class="rust"><code><span class="doccomment">///! *Instruction Set Architecture - ISA*
 </span><span class="kw">use </span>std::ops::RangeInclusive;
+
+<span class="kw">pub mod </span>memory;
 
 <span class="kw">pub const </span>BITS_ADDRESS: usize = <span class="number">16</span>;
 <span class="kw">pub const </span>MAX_VALUE_MEMORY: usize = <span class="number">2_usize</span>.pow(BITS_ADDRESS <span class="kw">as </span>u32) - <span class="number">1</span>;
